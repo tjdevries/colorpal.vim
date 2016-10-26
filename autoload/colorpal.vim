@@ -1,4 +1,15 @@
 let s:plugin_base = expand('<sfile>:p:h:h')
+
+let s:styles = [
+      \ 'bold',
+      \ 'underline',
+      \ 'undercurl',
+      \ 'reverse',
+      \ 'inverse',
+      \ 'italic',
+      \ 'standout',
+      \ ]
+
 let s:default_palette = {
       \   'black':  '000000',
       \   'white':  'ffffff',
@@ -1239,25 +1250,32 @@ function! colorpal#highlight(bang, group, ...) abort
     let bg = ''
   endif
 
+  let styles = []
+  let style_str = ''
+
   if !empty(style) && style != '-'
-    if has_key(s:parsed_hl, style)
-      let style = s:parsed_hl[style].style
-    else
-      let style = 'cterm='.style.' gui='.style
+    for s in split(style, ',')
+      if index(s:styles, s) != -1
+        call add(styles, s)
+      elseif has_key(s:parsed_hl, s)
+        call extend(styles, s:parsed_hl[s].styles)
+      endif
+    endfor
+    if !empty(styles)
+      let sj = join(styles, ',')
+      let style_str = 'cterm='.sj.' gui='.sj
     endif
-  else
-    let style = ''
   endif
 
-  if !empty(fg.bg.style)
+  if !empty(fg.bg.style_str)
     if !has_key(s:parsed_hl, a:group)
       let s:parsed_hl[a:group] = {
             \ 'fg': [ctermfg, guifg],
             \ 'bg': [ctermbg, guibg],
-            \ 'style': style,
+            \ 'styles': styles,
             \ }
     endif
-    let cline = a:group.' '.fg.' '.bg.' '.style
+    let cline = a:group.' '.fg.' '.bg.' '.style_str
     execute 'highlight' (a:bang ? 'default' : '') cline
   endif
 endfunction
