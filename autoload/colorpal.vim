@@ -1127,11 +1127,15 @@ function! colorpal#parse_name(name, segment) abort
           if args[0] =~# '^#'
             let bcolor = args[0]
           elseif !has_key(s:user_palette, args[0])
-            if !has_key(s:color_names, args[0])
-              let cache = 0
-              continue
+            if has_key(s:parsed_hl, args[0])
+              let bcolor = s:parsed_hl[args[0]][a:segment][1]
+            else
+              if !has_key(s:color_names, args[0])
+                let cache = 0
+                continue
+              endif
+              let bcolor = s:color_names[args[0]]
             endif
-            let bcolor = s:color_names[args[0]]
           else
             let bcolor = s:user_palette[args[0]][1]
           endif
