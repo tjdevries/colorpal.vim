@@ -1035,7 +1035,7 @@ function! colorpal#set_theme(name) abort
 endfunction
 
 
-function! colorpal#parse_name(name) abort
+function! colorpal#parse_name(name, segment) abort
   if !exists('s:user_palette')
     call colorpal#load()
   endif
@@ -1060,7 +1060,10 @@ function! colorpal#parse_name(name) abort
     let chex = substitute(name, '^#\+', '', 'g')
     let cterm = s:rgb2term(s:hex2rgb(chex))
   elseif !has_key(s:user_palette, parts[0])
-    if has_key(s:color_names, parts[0])
+    if has_key(s:parsed_hl, parts[0])
+      " Get a color from previously parsed highlights.
+      let [cterm, chex] = s:parsed_hl[parts[0]][a:segment]
+    elseif has_key(s:color_names, parts[0])
       let cterm = s:rgb2term(s:hex2rgb(s:color_names[parts[0]]))
       let chex = s:color_names[parts[0]]
       let s:user_palette[parts[0]] = [cterm, chex]
@@ -1132,6 +1135,7 @@ function! colorpal#parse_name(name) abort
           else
             let bcolor = s:user_palette[args[0]][1]
           endif
+
           let bval = str2float(args[1])
           if args[1] !~# '\.'
             let bval = bval / 100.0
@@ -1177,6 +1181,7 @@ endfunction
 
 
 function! colorpal#begin() abort
+  let s:parsed_hl = {}
   if !exists(':CPHL')
     command! -bang -nargs=+ CPHL call colorpal#highlight(<bang>0, <f-args>)
   endif
@@ -1207,8 +1212,8 @@ function! colorpal#highlight(bang, group, ...) abort
     let style = a:3
   endif
 
-  let [ctermfg, guifg] = colorpal#parse_name(fg)
-  let [ctermbg, guibg] = colorpal#parse_name(bg)
+  let [ctermfg, guifg] = colorpal#parse_name(fg, 'fg')
+  let [ctermbg, guibg] = colorpal#parse_name(bg, 'bg')
 
   if !empty(guifg)
     let fg = 'ctermfg='.ctermfg.' guifg='
@@ -1231,12 +1236,23 @@ function! colorpal#highlight(bang, group, ...) abort
   endif
 
   if !empty(style) && style != '-'
-    let style = 'cterm='.style.' gui='.style
+    if has_key(s:parsed_hl, style)
+      let style = s:parsed_hl[style].style
+    else
+      let style = 'cterm='.style.' gui='.style
+    endif
   else
     let style = ''
   endif
 
   if !empty(fg.bg.style)
+    if !has_key(s:parsed_hl, a:group)
+      let s:parsed_hl[a:group] = {
+            \ 'fg': [ctermfg, guifg],
+            \ 'bg': [guibg, guibg],
+            \ 'style': style,
+            \ }
+    endif
     let cline = a:group.' '.fg.' '.bg.' '.style
     execute 'highlight' (a:bang ? 'default' : '') cline
   endif
