@@ -1249,7 +1249,7 @@ function! colorpal#highlight(bang, group, ...) abort
     if !has_key(s:parsed_hl, a:group)
       let s:parsed_hl[a:group] = {
             \ 'fg': [ctermfg, guifg],
-            \ 'bg': [guibg, guibg],
+            \ 'bg': [ctermbg, guibg],
             \ 'style': style,
             \ }
     endif
